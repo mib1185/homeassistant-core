@@ -1151,16 +1151,9 @@ async def test_form_reauth_legacy(hass, remote: Mock):
         context={"entry_id": entry.entry_id, "source": config_entries.SOURCE_REAUTH},
         data=entry.data,
     )
-    assert result["type"] == "form"
-    assert result["errors"] == {}
-
-    result2 = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {},
-    )
     await hass.async_block_till_done()
-    assert result2["type"] == "abort"
-    assert result2["reason"] == "reauth_successful"
+    assert result["type"] == "abort"
+    assert result["reason"] == "reauth_successful"
 
 
 async def test_form_reauth_websocket(hass, remotews: Mock):
@@ -1174,16 +1167,9 @@ async def test_form_reauth_websocket(hass, remotews: Mock):
         context={"entry_id": entry.entry_id, "source": config_entries.SOURCE_REAUTH},
         data=entry.data,
     )
-    assert result["type"] == "form"
-    assert result["errors"] == {}
-
-    result2 = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {},
-    )
     await hass.async_block_till_done()
-    assert result2["type"] == "abort"
-    assert result2["reason"] == "reauth_successful"
+    assert result["type"] == "abort"
+    assert result["reason"] == "reauth_successful"
     assert entry.state == config_entries.ConfigEntryState.LOADED
 
 
@@ -1191,13 +1177,6 @@ async def test_form_reauth_websocket_cannot_connect(hass, remotews: Mock):
     """Test reauthenticate websocket when we cannot connect on the first attempt."""
     entry = MockConfigEntry(domain=DOMAIN, data=MOCK_WS_ENTRY)
     entry.add_to_hass(hass)
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"entry_id": entry.entry_id, "source": config_entries.SOURCE_REAUTH},
-        data=entry.data,
-    )
-    assert result["type"] == "form"
-    assert result["errors"] == {}
 
     with patch(
         "homeassistant.components.samsungtv.bridge.SamsungTVWS",
@@ -1206,36 +1185,32 @@ async def test_form_reauth_websocket_cannot_connect(hass, remotews: Mock):
         "homeassistant.components.samsungtv.config_flow.socket.gethostbyname",
         return_value="fake_host",
     ):
-        result2 = await hass.config_entries.flow.async_configure(
-            result["flow_id"],
-            {},
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={
+                "entry_id": entry.entry_id,
+                "source": config_entries.SOURCE_REAUTH,
+            },
+            data=entry.data,
         )
-        await hass.async_block_till_done()
 
-    assert result2["type"] == "form"
-    assert result2["errors"] == {"base": RESULT_AUTH_MISSING}
+    assert result["type"] == "form"
+    assert result["errors"] == {"base": RESULT_AUTH_MISSING}
 
-    result3 = await hass.config_entries.flow.async_configure(
+    result2 = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         {},
     )
     await hass.async_block_till_done()
 
-    assert result3["type"] == "abort"
-    assert result3["reason"] == "reauth_successful"
+    assert result2["type"] == "abort"
+    assert result2["reason"] == "reauth_successful"
 
 
 async def test_form_reauth_websocket_not_supported(hass, remotews: Mock):
     """Test reauthenticate websocket when the device is not supported."""
     entry = MockConfigEntry(domain=DOMAIN, data=MOCK_WS_ENTRY)
     entry.add_to_hass(hass)
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"entry_id": entry.entry_id, "source": config_entries.SOURCE_REAUTH},
-        data=entry.data,
-    )
-    assert result["type"] == "form"
-    assert result["errors"] == {}
 
     with patch(
         "homeassistant.components.samsungtv.bridge.SamsungTVWS",
@@ -1244,11 +1219,15 @@ async def test_form_reauth_websocket_not_supported(hass, remotews: Mock):
         "homeassistant.components.samsungtv.config_flow.socket.gethostbyname",
         return_value="fake_host",
     ):
-        result2 = await hass.config_entries.flow.async_configure(
-            result["flow_id"],
-            {},
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={
+                "entry_id": entry.entry_id,
+                "source": config_entries.SOURCE_REAUTH,
+            },
+            data=entry.data,
         )
         await hass.async_block_till_done()
 
-    assert result2["type"] == "abort"
-    assert result2["reason"] == "not_supported"
+    assert result["type"] == "abort"
+    assert result["reason"] == RESULT_NOT_SUPPORTED

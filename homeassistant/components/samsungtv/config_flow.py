@@ -75,6 +75,7 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialize flow."""
         self._reauth_entry: config_entries.ConfigEntry | None = None
+        self._reauth_try_unattended: bool | None = None
         self._host: str = ""
         self._mac: str | None = None
         self._udn: str | None = None
@@ -332,6 +333,7 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.context["entry_id"]
         )
         assert self._reauth_entry
+        self._reauth_try_unattended = True
         data = self._reauth_entry.data
         if data.get(CONF_MODEL) and data.get(CONF_NAME):
             self._title = f"{data[CONF_NAME]} ({data[CONF_MODEL]})"
@@ -345,7 +347,7 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Confirm reauth."""
         errors = {}
         assert self._reauth_entry
-        if user_input is not None:
+        if user_input is not None or self._reauth_try_unattended:
             bridge = SamsungTVBridge.get_bridge(
                 self._reauth_entry.data[CONF_METHOD], self._reauth_entry.data[CONF_HOST]
             )
@@ -358,8 +360,13 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 await self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
                 return self.async_abort(reason="reauth_successful")
-            if result not in (RESULT_AUTH_MISSING, RESULT_CANNOT_CONNECT):
+            if (
+                result not in (RESULT_AUTH_MISSING, RESULT_CANNOT_CONNECT)
+                and not self._reauth_try_unattended
+            ):
                 return self.async_abort(reason=result)
+
+            self._reauth_try_unattended = False
 
             # On websocket we will get RESULT_CANNOT_CONNECT when auth is missing
             errors = {"base": RESULT_AUTH_MISSING}
