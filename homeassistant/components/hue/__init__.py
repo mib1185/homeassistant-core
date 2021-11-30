@@ -1,4 +1,4 @@
-"""Support for the Philips Hue system."""
+"""Support for the Philips Hue system. """
 
 from aiohue.util import normalize_bridge_id
 
