@@ -49,7 +49,7 @@ MOCK_MESH_MASTER_WIFI1_MAC = "1C:ED:6F:12:34:12"
 MOCK_MESH_SLAVE_MAC = "1C:ED:6F:12:34:21"
 MOCK_MESH_SLAVE_WIFI1_MAC = "1C:ED:6F:12:34:22"
 
-MOCK_FB_SERVICES: dict[str, dict] = {
+MOCK_FB_BASE_SERVICES: dict[str, dict] = {
     "DeviceInfo1": {
         "GetInfo": {
             "NewSerialNumber": MOCK_MESH_MASTER_MAC,
@@ -68,11 +68,6 @@ MOCK_FB_SERVICES: dict[str, dict] = {
             "NewBytesSent": 23004321,
             "NewBytesReceived": 12045,
         },
-    },
-    "Layer3Forwarding1": {
-        "GetDefaultConnectionService": {
-            "NewDefaultConnectionService": "1.WANPPPConnection.1"
-        }
     },
     "UserInterface1": {
         "GetInfo": {},
@@ -903,6 +898,24 @@ MOCK_HOST_ATTRIBUTES_DATA = [
         "X_AVM-DE_FriendlyNameIsWriteable": "1",
     },
 ]
+
+MOCK_CALL_DEFLECTION_DATA = {
+    "X_AVM-DE_OnTel1": {
+        "GetDeflections": {
+            "NewDeflectionList": "<List><Item><DeflectionId>0</DeflectionId><Enable>0</Enable><Type>fromAll</Type><Number></Number><DeflectionToNumber>+1234657890</DeflectionToNumber><Mode>eImmediately</Mode><Outgoing></Outgoing><PhonebookID></PhonebookID></Item></List>"
+        }
+    }
+}
+
+MOCK_LAYER3_FORWARDING_DATA = {
+    "Layer3Forwarding1": {
+        "GetDefaultConnectionService": {
+            "NewDefaultConnectionService": "1.WANPPPConnection.1"
+        }
+    },
+}
+
+MOCK_FB_SERVICES = {**MOCK_FB_BASE_SERVICES, **MOCK_LAYER3_FORWARDING_DATA}
 
 MOCK_USER_DATA = MOCK_CONFIG[DOMAIN][CONF_DEVICES][0]
 MOCK_USER_INPUT_ADVANCED = MOCK_USER_DATA
