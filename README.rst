@@ -12,6 +12,8 @@ demo <https://demo.home-assistant.io>`__, `installation instructions <https://ho
 Featured integrations
 ---------------------
 
+
+
 |screenshot-integrations|
 
 The system is built using a modular approach so support for other devices or actions can be implemented easily. See also the `section on architecture <https://developers.home-assistant.io/docs/architecture_index/>`__ and the `section on creating your own
