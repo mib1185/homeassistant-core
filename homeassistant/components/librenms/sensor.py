@@ -93,7 +93,7 @@ async def async_setup_entry(
 
 
 class LibrenmsSystemSensorEntity(LibrenmsSystemEntity, SensorEntity):
-    """Define Librenms sensor entity."""
+    """Define Librenms system sensor entity."""
 
     entity_description: LibrenmsSystemSensorEntityDescription
 
