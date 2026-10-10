@@ -11,7 +11,7 @@ from homeassistant.components import zone
 from homeassistant.components.device_tracker import DOMAIN as DEVICE_TRACKER_DOMAIN
 from homeassistant.components.device_tracker.legacy import Device
 from homeassistant.components.traccar import DOMAIN, TRACKER_UPDATE
-from homeassistant.const import STATE_HOME, STATE_NOT_HOME
+from homeassistant.const import STATE_HOME, STATE_NOT_HOME, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.core_config import async_process_ha_core_config
 from homeassistant.data_entry_flow import FlowResultType
@@ -23,6 +23,8 @@ from tests.typing import ClientSessionGenerator
 
 HOME_LATITUDE = 37.239622
 HOME_LONGITUDE = -115.815811
+
+BATTERY_ENTITY_ID = "sensor.123_battery"
 
 
 @pytest.fixture(autouse=True)
@@ -143,7 +145,7 @@ async def test_enter_and_exit(
 
     assert len(device_registry.devices) == 1
 
-    assert len(entity_registry.entities) == 1
+    assert len(entity_registry.entities) == 2
 
 
 async def test_enter_with_attrs_as_query(
@@ -177,6 +179,7 @@ async def test_enter_with_attrs_as_query(
     assert state.attributes["bearing"] == 105.32
     assert state.attributes["altitude"] == 102.0
     assert "charge" not in state.attributes
+    assert hass.states.get(BATTERY_ENTITY_ID).state == "10.0"
 
     data = {
         "lat": str(HOME_LATITUDE),
@@ -199,6 +202,14 @@ async def test_enter_with_attrs_as_query(
     assert state.attributes["speed"] == 23
     assert state.attributes["bearing"] == 123
     assert state.attributes["altitude"] == 123
+    assert hass.states.get(BATTERY_ENTITY_ID).state == "23.0"
+
+    del data["batt"]
+
+    req = await client.post(url, params=data)
+    await hass.async_block_till_done()
+    assert req.status == HTTPStatus.OK
+    assert hass.states.get(BATTERY_ENTITY_ID).state == STATE_UNKNOWN
 
 
 async def test_enter_with_attrs_as_form(
@@ -227,6 +238,7 @@ async def test_enter_with_attrs_as_form(
     assert state.attributes["longitude"] == 1.1
     assert state.attributes["gps_accuracy"] == 100.0
     assert state.attributes["battery_level"] == 77.0
+    assert hass.states.get(BATTERY_ENTITY_ID).state == "77.0"
 
 
 async def test_enter_with_attrs_as_payload(
@@ -266,6 +278,7 @@ async def test_enter_with_attrs_as_payload(
     assert state.attributes["speed"] == 100.0
     assert state.attributes["bearing"] == 105.32
     assert state.attributes["altitude"] == 102.0
+    assert hass.states.get(BATTERY_ENTITY_ID).state == "10.0"
 
 
 async def test_two_devices(hass: HomeAssistant, client, webhook_id) -> None:
