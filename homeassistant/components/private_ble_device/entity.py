@@ -5,13 +5,12 @@ import binascii
 from typing import override
 
 from homeassistant.components import bluetooth
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity
 
 from .const import DOMAIN
-from .coordinator import async_get_coordinator, async_last_service_info
+from .coordinator import PrivateBLEDeviceConfigEntry, async_last_service_info
 
 
 class BasePrivateDeviceEntity(Entity):
@@ -20,7 +19,7 @@ class BasePrivateDeviceEntity(Entity):
     _attr_should_poll = False
     _attr_has_entity_name = True
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
+    def __init__(self, config_entry: PrivateBLEDeviceConfigEntry) -> None:
         """Set up a new BleScanner entity."""
         irk = config_entry.data["irk"]
 
@@ -41,7 +40,7 @@ class BasePrivateDeviceEntity(Entity):
     @override
     async def async_added_to_hass(self) -> None:
         """Configure entity when it is added to Home Assistant."""
-        coordinator = async_get_coordinator(self.hass)
+        coordinator = self._entry.runtime_data
         self.async_on_remove(
             coordinator.async_track_service_info(
                 self._async_track_service_info, self._irk

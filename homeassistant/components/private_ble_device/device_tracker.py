@@ -6,10 +6,10 @@ from typing import override
 
 from homeassistant.components import bluetooth
 from homeassistant.components.device_tracker import BaseScannerEntity, SourceType
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from .coordinator import PrivateBLEDeviceConfigEntry
 from .entity import BasePrivateDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: PrivateBLEDeviceConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Load Device Tracker entities for a config entry."""

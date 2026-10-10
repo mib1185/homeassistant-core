@@ -8,6 +8,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher
 
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth.match import BluetoothCallbackMatcher
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import PRIVATE_BLE_DEVICE_DATA
@@ -16,6 +17,8 @@ _LOGGER = logging.getLogger(__name__)
 
 type UnavailableCallback = Callable[[bluetooth.BluetoothServiceInfoBleak], None]
 type Cancellable = Callable[[], None]
+
+type PrivateBLEDeviceConfigEntry = ConfigEntry[PrivateDevicesCoordinator]
 
 
 def async_last_service_info(

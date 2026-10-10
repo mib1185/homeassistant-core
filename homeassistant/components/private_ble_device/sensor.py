@@ -13,7 +13,6 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
@@ -23,6 +22,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from .coordinator import PrivateBLEDeviceConfigEntry
 from .entity import BasePrivateDeviceEntity
 
 
@@ -95,7 +95,7 @@ SENSOR_DESCRIPTIONS = (
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: PrivateBLEDeviceConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up sensors for Private BLE component."""
@@ -112,7 +112,7 @@ class PrivateBLEDeviceSensor(BasePrivateDeviceEntity, SensorEntity):
 
     def __init__(
         self,
-        config_entry: ConfigEntry,
+        config_entry: PrivateBLEDeviceConfigEntry,
         entity_description: PrivateDeviceSensorEntityDescription,
     ) -> None:
         """Initialize an sensor entity."""
