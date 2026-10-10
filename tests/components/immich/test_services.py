@@ -1,8 +1,11 @@
 """Test the Immich services."""
 
+import errno
+import os
 import re
 from unittest.mock import Mock, patch
 
+from aiohttp import ClientOSError
 from aioimmich.exceptions import ImmichError, ImmichNotFoundError
 import pytest
 
@@ -10,7 +13,7 @@ from homeassistant.components.immich.const import DOMAIN
 from homeassistant.components.immich.services import SERVICE_UPLOAD_FILE
 from homeassistant.components.media_source import PlayMedia
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ServiceValidationError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 
 from . import setup_integration
@@ -211,30 +214,8 @@ async def test_upload_file_album_not_found(
         )
 
 
-@pytest.mark.parametrize(
-    ("side_effect", "expected_err_message"),
-    [
-        (
-            ImmichError(
-                {
-                    "message": "Boom! Upload failed",
-                    "error": "Bad Request",
-                    "statusCode": 400,
-                    "correlationId": "nyzxjkno",
-                }
-            ),
-            "Boom! Upload failed (error: 'Bad Request' code: '400' correlation_id: 'nyzxjkno')",
-        ),
-        (
-            FileNotFoundError(2, "No such file or directory", "/media/screenshot.jpg"),
-            "[Errno 2] No such file or directory: '/media/screenshot.jpg'",
-        ),
-    ],
-)
 async def test_upload_file_upload_failed(
     hass: HomeAssistant,
-    side_effect: Exception,
-    expected_err_message: str,
     mock_immich: Mock,
     mock_config_entry: MockConfigEntry,
     mock_media_source: Mock,
@@ -242,13 +223,116 @@ async def test_upload_file_upload_failed(
     """Test upload_file service raising upload_failed."""
     await setup_integration(hass, mock_config_entry)
 
-    mock_immich.assets.async_upload_asset.side_effect = side_effect
+    mock_immich.assets.async_upload_asset.side_effect = ImmichError(
+        {
+            "message": "Boom! Upload failed",
+            "error": "Bad Request",
+            "statusCode": 400,
+            "correlationId": "nyzxjkno",
+        }
+    )
     with pytest.raises(
         ServiceValidationError,
-        match=re.escape(
-            f"Upload of file `/media/screenshot.jpg` failed ({expected_err_message})"
-        ),
+        match=re.escape("Upload of file `/media/screenshot.jpg` failed."),
     ):
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_UPLOAD_FILE,
+            {
+                "config_entry_id": mock_config_entry.entry_id,
+                "file": {
+                    "media_content_id": "media-source://media_source/local/screenshot.jpg",
+                    "media_content_type": "image/jpeg",
+                },
+            },
+            blocking=True,
+        )
+
+
+@pytest.mark.parametrize(
+    ("err_no", "expected_exception", "translation_key"),
+    [
+        pytest.param(
+            errno.ENOENT,
+            ServiceValidationError,
+            "os_read_not_found",
+            id="not_found",
+        ),
+        pytest.param(
+            errno.EACCES,
+            HomeAssistantError,
+            "os_read_permission_denied",
+            id="permission_denied",
+        ),
+        pytest.param(
+            errno.EISDIR,
+            HomeAssistantError,
+            "os_read_is_directory",
+            id="is_directory",
+        ),
+        pytest.param(
+            errno.EIO,
+            HomeAssistantError,
+            "os_read_error",
+            id="fallback",
+        ),
+    ],
+)
+async def test_upload_file_read_error(
+    hass: HomeAssistant,
+    err_no: int,
+    expected_exception: type[HomeAssistantError],
+    translation_key: str,
+    mock_immich: Mock,
+    mock_config_entry: MockConfigEntry,
+    mock_media_source: Mock,
+) -> None:
+    """Test upload_file service raising a translated error when reading fails."""
+    await setup_integration(hass, mock_config_entry)
+
+    mock_immich.assets.async_upload_asset.side_effect = OSError(
+        err_no, os.strerror(err_no), "/media/screenshot.jpg"
+    )
+    with pytest.raises(expected_exception) as err:
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_UPLOAD_FILE,
+            {
+                "config_entry_id": mock_config_entry.entry_id,
+                "file": {
+                    "media_content_id": "media-source://media_source/local/screenshot.jpg",
+                    "media_content_type": "image/jpeg",
+                },
+            },
+            blocking=True,
+        )
+    assert err.value.translation_domain == "homeassistant"
+    assert err.value.translation_key == translation_key
+    assert err.value.translation_placeholders == {"path": "/media/screenshot.jpg"}
+
+
+@pytest.mark.parametrize(
+    "side_effect",
+    [
+        pytest.param(
+            ClientOSError(errno.ECONNRESET, "Connection reset by peer"),
+            id="client_os_error",
+        ),
+        pytest.param(TimeoutError(), id="timeout"),
+    ],
+)
+async def test_upload_file_connection_error(
+    hass: HomeAssistant,
+    side_effect: Exception,
+    mock_immich: Mock,
+    mock_config_entry: MockConfigEntry,
+    mock_media_source: Mock,
+) -> None:
+    """Test upload_file service does not treat connection errors as read errors."""
+    await setup_integration(hass, mock_config_entry)
+
+    mock_immich.assets.async_upload_asset.side_effect = side_effect
+    with pytest.raises(type(side_effect)):
         await hass.services.async_call(
             DOMAIN,
             SERVICE_UPLOAD_FILE,

@@ -119,7 +119,7 @@
       "message": "An error occurred while retrieving data from your Immich instance: {error}"
     },
     "upload_failed": {
-      "message": "Upload of file `{file}` failed ({error})."
+      "message": "Upload of file `{file}` failed."
     }
   },
   "services": {

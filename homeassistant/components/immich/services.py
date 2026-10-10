@@ -2,6 +2,7 @@
 
 import logging
 
+from aiohttp import ClientError
 from aioimmich.exceptions import ImmichError
 import probatio
 
@@ -9,6 +10,7 @@ from homeassistant.components.media_source import async_resolve_media
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import service
+from homeassistant.helpers.os_error import os_read_error
 from homeassistant.helpers.selector import MediaSelector
 
 from .const import DOMAIN
@@ -67,12 +69,17 @@ async def _async_upload_file(service_call: ServiceCall) -> None:
             await coordinator.api.albums.async_add_assets_to_album(
                 target_album, [upload_result.asset_id]
             )
-    except (ImmichError, FileNotFoundError) as ex:
+    except ImmichError as ex:
         raise ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="upload_failed",
-            translation_placeholders={"file": str(media.path), "error": str(ex)},
+            translation_placeholders={"file": str(media.path)},
         ) from ex
+    # Connection errors subclass OSError but are not file read errors
+    except ClientError, TimeoutError:
+        raise
+    except OSError as ex:
+        raise os_read_error(ex, str(media.path)) from ex
 
 
 @callback
