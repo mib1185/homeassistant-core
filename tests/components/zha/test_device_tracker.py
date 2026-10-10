@@ -103,4 +103,11 @@ async def test_device_tracker(
 
     assert entity.is_connected is True
     assert entity.source_type == SourceType.ROUTER
-    assert entity.battery_level == 100
+    assert "battery_level" not in hass.states.get(entity_id).attributes
+
+    # The battery level is exposed by a separate sensor entity
+    battery_entity_id = find_entity_id(
+        Platform.SENSOR, zha_device_proxy, hass, qualifier="battery"
+    )
+    assert battery_entity_id is not None
+    assert hass.states.get(battery_entity_id).state == "100.0"

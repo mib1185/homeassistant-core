@@ -53,15 +53,6 @@ class ZHADeviceScannerEntity(ScannerEntity, ZHAEntity):
         """Return true if the device is connected to the network."""
         return self._zha_state.connected
 
-    @property
-    @override
-    def battery_level(self) -> int | None:
-        """Return the battery level of the device.
-
-        Percentage from 0-100.
-        """
-        return self._zha_state.battery_level
-
     @property  # type: ignore[misc]
     @override
     def device_info(self) -> DeviceInfo:
