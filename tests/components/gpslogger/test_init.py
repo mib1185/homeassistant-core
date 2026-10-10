@@ -11,7 +11,7 @@ from homeassistant.components import zone
 from homeassistant.components.device_tracker import DOMAIN as DEVICE_TRACKER_DOMAIN
 from homeassistant.components.device_tracker.legacy import Device
 from homeassistant.components.gpslogger import DOMAIN, TRACKER_UPDATE
-from homeassistant.const import STATE_HOME, STATE_NOT_HOME
+from homeassistant.const import STATE_HOME, STATE_NOT_HOME, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.core_config import async_process_ha_core_config
 from homeassistant.data_entry_flow import FlowResultType
@@ -23,6 +23,8 @@ from tests.typing import ClientSessionGenerator
 
 HOME_LATITUDE = 37.239622
 HOME_LONGITUDE = -115.815811
+
+BATTERY_ENTITY_ID = "sensor.123_battery"
 
 
 @pytest.fixture(autouse=True)
@@ -146,7 +148,7 @@ async def test_enter_and_exit(
     assert state_name == STATE_NOT_HOME
 
     assert len(device_registry.devices) == 1
-    assert len(entity_registry.entities) == 1
+    assert len(entity_registry.entities) == 2
 
 
 async def test_enter_with_attrs(
@@ -180,6 +182,7 @@ async def test_enter_with_attrs(
     assert state.attributes["altitude"] == 102.0
     assert state.attributes["provider"] == "gps"
     assert state.attributes["activity"] == "running"
+    assert hass.states.get(BATTERY_ENTITY_ID).state == "10.0"
 
     data = {
         "latitude": HOME_LATITUDE,
@@ -206,6 +209,14 @@ async def test_enter_with_attrs(
     assert state.attributes["altitude"] == 123
     assert state.attributes["provider"] == "gps"
     assert state.attributes["activity"] == "idle"
+    assert hass.states.get(BATTERY_ENTITY_ID).state == "23.0"
+
+    del data["battery"]
+
+    req = await gpslogger_client.post(url, data=data)
+    await hass.async_block_till_done()
+    assert req.status == HTTPStatus.OK
+    assert hass.states.get(BATTERY_ENTITY_ID).state == STATE_UNKNOWN
 
 
 @pytest.mark.xfail(

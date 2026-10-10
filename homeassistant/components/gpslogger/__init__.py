@@ -26,7 +26,7 @@ from .const import (
 
 type GPSLoggerConfigEntry = ConfigEntry[set[str]]
 
-PLATFORMS = [Platform.DEVICE_TRACKER]
+PLATFORMS = [Platform.DEVICE_TRACKER, Platform.SENSOR]
 
 TRACKER_UPDATE = f"{DOMAIN}_tracker_update"
 
