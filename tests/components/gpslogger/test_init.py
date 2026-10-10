@@ -176,12 +176,12 @@ async def test_enter_with_attrs(
     state = hass.states.get(f"{DEVICE_TRACKER_DOMAIN}.{data['device']}")
     assert state.state == STATE_NOT_HOME
     assert state.attributes["gps_accuracy"] == 10.5
-    assert state.attributes["battery_level"] == 10.0
     assert state.attributes["speed"] == 100.0
     assert state.attributes["direction"] == 105.32
     assert state.attributes["altitude"] == 102.0
     assert state.attributes["provider"] == "gps"
     assert state.attributes["activity"] == "running"
+    assert "battery_level" not in state.attributes
     assert hass.states.get(BATTERY_ENTITY_ID).state == "10.0"
 
     data = {
@@ -203,7 +203,6 @@ async def test_enter_with_attrs(
     state = hass.states.get(f"{DEVICE_TRACKER_DOMAIN}.{data['device']}")
     assert state.state == STATE_HOME
     assert state.attributes["gps_accuracy"] == 123
-    assert state.attributes["battery_level"] == 23
     assert state.attributes["speed"] == 23
     assert state.attributes["direction"] == 123
     assert state.attributes["altitude"] == 123

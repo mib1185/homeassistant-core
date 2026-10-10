@@ -6,7 +6,7 @@ from homeassistant.components.device_tracker import (
     TrackerEntity,
     TrackerEntityStateAttribute,
 )
-from homeassistant.const import ATTR_BATTERY_LEVEL, EntityStateAttribute
+from homeassistant.const import EntityStateAttribute
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -40,7 +40,7 @@ async def async_setup_entry(
 
         entry.runtime_data.add(device)
 
-        async_add_entities([GPSLoggerEntity(device, gps, battery, accuracy, attrs)])
+        async_add_entities([GPSLoggerEntity(device, gps, accuracy, attrs)])
 
     entry.async_on_unload(async_dispatcher_connect(hass, TRACKER_UPDATE, _receive_data))
 
@@ -57,7 +57,7 @@ async def async_setup_entry(
     entities = []
     for dev_id in dev_ids:
         entry.runtime_data.add(dev_id)
-        entity = GPSLoggerEntity(dev_id, None, None, None, None)
+        entity = GPSLoggerEntity(dev_id, None, None, None)
         entities.append(entity)
 
     async_add_entities(entities)
@@ -69,12 +69,11 @@ class GPSLoggerEntity(TrackerEntity, RestoreEntity):
     _attr_has_entity_name = True
     _attr_name = None
 
-    def __init__(self, device, location, battery, accuracy, attributes):
+    def __init__(self, device, location, accuracy, attributes):
         """Set up GPSLogger entity."""
         self._attr_location_accuracy = accuracy
         self._attr_extra_state_attributes = attributes
         self._name = device
-        self._battery = battery
         if location:
             self._attr_latitude = location[0]
             self._attr_longitude = location[1]
@@ -84,12 +83,6 @@ class GPSLoggerEntity(TrackerEntity, RestoreEntity):
             identifiers={(DOMAIN, device)},
             name=device,
         )
-
-    @property
-    @override
-    def battery_level(self) -> int | None:
-        """Return battery value of the device."""
-        return self._battery
 
     @override
     async def async_added_to_hass(self) -> None:
@@ -114,7 +107,6 @@ class GPSLoggerEntity(TrackerEntity, RestoreEntity):
                 ATTR_PROVIDER: None,
                 ATTR_SPEED: None,
             }
-            self._battery = None
             return
 
         attr = state.attributes
@@ -130,7 +122,6 @@ class GPSLoggerEntity(TrackerEntity, RestoreEntity):
             ATTR_PROVIDER: attr.get(ATTR_PROVIDER),
             ATTR_SPEED: attr.get(ATTR_SPEED),
         }
-        self._battery = attr.get(ATTR_BATTERY_LEVEL)
 
     @override
     async def async_will_remove_from_hass(self) -> None:
@@ -146,7 +137,6 @@ class GPSLoggerEntity(TrackerEntity, RestoreEntity):
 
         self._attr_latitude = location[0]
         self._attr_longitude = location[1]
-        self._battery = battery
         self._attr_location_accuracy = accuracy
         self._attr_extra_state_attributes.update(attributes)
         self.async_write_ha_state()
