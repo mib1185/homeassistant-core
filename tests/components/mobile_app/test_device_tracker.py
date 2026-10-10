@@ -221,7 +221,6 @@ async def test_sending_location(
         == {
             "friendly_name": "Test 1",
             "source_type": "gps",
-            "battery_level": 40,
             "altitude": 50.0,
             "course": 60,
             "speed": 70,
@@ -259,7 +258,6 @@ async def test_sending_location(
         "latitude": 1.0,
         "longitude": 2.0,
         "gps_accuracy": 3,
-        "battery_level": 4,
         "altitude": 5.0,
         "course": 6,
         "speed": 7,
@@ -317,7 +315,6 @@ async def test_restoring_location(
     assert state_2.attributes["latitude"] == 10
     assert state_2.attributes["longitude"] == 20
     assert state_2.attributes["gps_accuracy"] == 30
-    assert state_2.attributes["battery_level"] == 40
     assert state_2.attributes["altitude"] == 50
     assert state_2.attributes["course"] == 60
     assert state_2.attributes["speed"] == 70
@@ -340,7 +337,6 @@ async def test_restoring_location(
             {
                 "friendly_name": "Test 1",
                 "source_type": "gps",
-                "battery_level": 40,
                 "altitude": 50.0,
                 "course": 60,
                 "speed": 70,
@@ -370,7 +366,6 @@ async def test_restoring_location(
             {
                 "friendly_name": "Test 1",
                 "source_type": "gps",
-                "battery_level": 40,
                 "altitude": 50.0,
                 "course": 60,
                 "speed": 70,
@@ -397,7 +392,6 @@ async def test_restoring_location(
             {
                 "friendly_name": "Test 1",
                 "source_type": "gps",
-                "battery_level": 40,
                 "altitude": 50.0,
                 "course": 60,
                 "speed": 70,
@@ -482,7 +476,6 @@ async def test_saving_state(
                 "latitude": 10.0,
                 "longitude": 20.0,
                 "gps_accuracy": 30,
-                "battery_level": 40,
                 "altitude": 50.0,
                 "course": 60,
                 "speed": 70,
@@ -505,7 +498,6 @@ async def test_saving_state(
                 "latitude": 1.0,
                 "longitude": 2.0,
                 "gps_accuracy": 3,
-                "battery_level": 4,
                 "in_zones": [],
                 "tracking_type": "position",
             },
@@ -524,7 +516,6 @@ async def test_saving_state(
             {
                 "friendly_name": "Test 1",
                 "source_type": "gps",
-                "battery_level": 40,
                 "altitude": 50.0,
                 "course": 60,
                 "speed": 70,
@@ -547,7 +538,6 @@ async def test_saving_state(
             {
                 "friendly_name": "Test 1",
                 "source_type": "gps",
-                "battery_level": 40,
                 "altitude": 50.0,
                 "course": 60,
                 "speed": 70,
@@ -566,7 +556,6 @@ async def test_saving_state(
             {
                 "friendly_name": "Test 1",
                 "source_type": "gps",
-                "battery_level": 40,
                 "in_zones": [],
                 "tracking_type": "position",
             },
@@ -624,7 +613,6 @@ async def test_restoring_state(
                 "latitude": 10.0,
                 "longitude": 20.0,
                 "gps_accuracy": 30,
-                "battery_level": 40,
                 "altitude": 50.0,
                 "course": 60,
                 "speed": 70,
@@ -650,7 +638,6 @@ async def test_restoring_state(
                 "latitude": 1.0,
                 "longitude": 2.0,
                 "gps_accuracy": 3,
-                "battery_level": 4,
                 "in_zones": [],
                 "tracking_type": "position",
             },
@@ -672,7 +659,6 @@ async def test_restoring_state(
             {
                 "friendly_name": "Test 1",
                 "source_type": "gps",
-                "battery_level": 40,
                 "altitude": 50.0,
                 "course": 60,
                 "speed": 70,
@@ -754,7 +740,6 @@ async def test_restoring_state_invalid_extra_data(
                         "latitude": 1.0,
                         "longitude": 2.0,
                         "gps_accuracy": 3,
-                        "battery_level": 4,
                     },
                 ),
                 {"data": invalid_data},

@@ -22,7 +22,6 @@ from homeassistant.components.zone import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    ATTR_BATTERY_LEVEL,
     ATTR_DEVICE_ID,
     ATTR_GPS_ACCURACY,
     STATE_HOME,
@@ -115,12 +114,6 @@ class MobileAppEntity(TrackerEntity, RestoreEntity):
     def unique_id(self) -> str:
         """Return the unique ID."""
         return self._entry.data[ATTR_DEVICE_ID]
-
-    @property
-    @override
-    def battery_level(self) -> int | None:
-        """Return the battery level of the device."""
-        return self._data.get(ATTR_BATTERY)
 
     @property
     @override
@@ -226,7 +219,6 @@ class MobileAppEntity(TrackerEntity, RestoreEntity):
                 attr.get(EntityStateAttribute.LONGITUDE),
             ),
             ATTR_GPS_ACCURACY: attr.get(TrackerEntityStateAttribute.GPS_ACCURACY),
-            ATTR_BATTERY: attr.get(ATTR_BATTERY_LEVEL),
         }
         data.update({key: attr[key] for key in attr if key in ATTR_KEYS})
         self._data = data
