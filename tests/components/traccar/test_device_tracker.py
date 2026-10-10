@@ -8,12 +8,7 @@ from homeassistant.components.device_tracker import (
 )
 from homeassistant.components.device_tracker.legacy import Device
 from homeassistant.components.traccar import DOMAIN
-from homeassistant.const import (
-    ATTR_BATTERY_LEVEL,
-    CONF_WEBHOOK_ID,
-    STATE_NOT_HOME,
-    EntityStateAttribute,
-)
+from homeassistant.const import CONF_WEBHOOK_ID, STATE_NOT_HOME, EntityStateAttribute
 from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers import device_registry as dr
 from homeassistant.setup import async_setup_component
@@ -52,7 +47,6 @@ async def test_restore_state(
                     EntityStateAttribute.LATITUDE: 1.0,
                     EntityStateAttribute.LONGITUDE: 2.0,
                     TrackerEntityStateAttribute.GPS_ACCURACY: 30,
-                    ATTR_BATTERY_LEVEL: 40,
                     "altitude": 50,
                     "bearing": 60,
                     "speed": 70,
@@ -68,7 +62,6 @@ async def test_restore_state(
     assert state.attributes[EntityStateAttribute.LATITUDE] == 1.0
     assert state.attributes[EntityStateAttribute.LONGITUDE] == 2.0
     assert state.attributes[TrackerEntityStateAttribute.GPS_ACCURACY] == 30
-    assert state.attributes[ATTR_BATTERY_LEVEL] == 40
     assert state.attributes["altitude"] == 50
     assert state.attributes["bearing"] == 60
     assert state.attributes["speed"] == 70

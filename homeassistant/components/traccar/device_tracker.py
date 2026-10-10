@@ -8,7 +8,7 @@ from homeassistant.components.device_tracker import (
     TrackerEntity,
     TrackerEntityStateAttribute,
 )
-from homeassistant.const import ATTR_BATTERY_LEVEL, EntityStateAttribute
+from homeassistant.const import EntityStateAttribute
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -82,7 +82,7 @@ async def async_setup_entry(
         entry.runtime_data.add(device)
 
         async_add_entities(
-            [TraccarEntity(device, latitude, longitude, battery, accuracy, attrs)]
+            [TraccarEntity(device, latitude, longitude, accuracy, attrs)]
         )
 
     entry.async_on_unload(async_dispatcher_connect(hass, TRACKER_UPDATE, _receive_data))
@@ -100,7 +100,7 @@ async def async_setup_entry(
     entities = []
     for dev_id in dev_ids:
         entry.runtime_data.add(dev_id)
-        entity = TraccarEntity(dev_id, None, None, None, None, None)
+        entity = TraccarEntity(dev_id, None, None, None, None)
         entities.append(entity)
 
     async_add_entities(entities)
@@ -112,12 +112,11 @@ class TraccarEntity(TrackerEntity, RestoreEntity):
     _attr_has_entity_name = True
     _attr_name = None
 
-    def __init__(self, device, latitude, longitude, battery, accuracy, attributes):
+    def __init__(self, device, latitude, longitude, accuracy, attributes):
         """Set up Traccar entity."""
         self._attr_location_accuracy = accuracy
         self._attr_extra_state_attributes = attributes
         self._device = device
-        self._battery = battery
         self._attr_latitude = latitude
         self._attr_longitude = longitude
         self._unsub_dispatcher = None
@@ -126,12 +125,6 @@ class TraccarEntity(TrackerEntity, RestoreEntity):
             name=device,
             identifiers={(DOMAIN, device)},
         )
-
-    @property
-    @override
-    def battery_level(self) -> int | None:
-        """Return battery value of the device."""
-        return self._battery
 
     @override
     async def async_added_to_hass(self) -> None:
@@ -154,7 +147,6 @@ class TraccarEntity(TrackerEntity, RestoreEntity):
                 ATTR_BEARING: None,
                 ATTR_SPEED: None,
             }
-            self._battery = None
             return
 
         attr = state.attributes
@@ -168,7 +160,6 @@ class TraccarEntity(TrackerEntity, RestoreEntity):
             ATTR_BEARING: attr.get(ATTR_BEARING),
             ATTR_SPEED: attr.get(ATTR_SPEED),
         }
-        self._battery = attr.get(ATTR_BATTERY_LEVEL)
 
     @override
     async def async_will_remove_from_hass(self) -> None:
@@ -186,7 +177,6 @@ class TraccarEntity(TrackerEntity, RestoreEntity):
 
         self._attr_latitude = latitude
         self._attr_longitude = longitude
-        self._battery = battery
         self._attr_location_accuracy = accuracy
         self._attr_extra_state_attributes.update(attributes)
         self.async_write_ha_state()
