@@ -70,7 +70,7 @@ async def async_setup_entry(
         entity = devices[dev_id] = OwnTracksEntity(dev_id, data)
         async_add_entities([entity])
 
-    entry.runtime_data.set_async_see(_receive_data)
+    entry.async_on_unload(entry.runtime_data.async_add_see_listener(_receive_data))
 
     async_add_entities(entities)
 

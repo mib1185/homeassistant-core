@@ -153,15 +153,25 @@ def test_context_delivers_pending_msg() -> None:
     context = owntracks.OwnTracksContext(None, None, None, None, None, None, None, None)
     context.async_see(hello="world")
     context.async_see(world="hello")
-    received = []
+    received_1 = []
+    received_2 = []
 
-    context.set_async_see(lambda **data: received.append(data))
+    context.async_add_see_listener(lambda **data: received_1.append(data))
+    remove_listener_2 = context.async_add_see_listener(
+        lambda **data: received_2.append(data)
+    )
+    assert received_1 == []
 
-    assert len(received) == 2
-    assert received[0] == {"hello": "world"}
-    assert received[1] == {"world": "hello"}
+    context.async_deliver_pending_msg()
 
-    received.clear()
+    assert received_1 == [{"hello": "world"}, {"world": "hello"}]
+    assert received_2 == [{"hello": "world"}, {"world": "hello"}]
 
-    context.set_async_see(lambda **data: received.append(data))
-    assert len(received) == 0
+    received_1.clear()
+    received_2.clear()
+    remove_listener_2()
+
+    context.async_see(foo="bar")
+
+    assert received_1 == [{"foo": "bar"}]
+    assert received_2 == []

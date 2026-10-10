@@ -1,10 +1,12 @@
 """Support for OwnTracks."""
 
 from collections import defaultdict
+from collections.abc import Callable
 from functools import partial
 import json
 import logging
 import re
+from typing import Any
 
 from aiohttp import web
 import probatio
@@ -13,7 +15,7 @@ from homeassistant.components import cloud, mqtt, webhook
 from homeassistant.components.device_tracker import TrackerEntityStateAttribute
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_WEBHOOK_ID, Platform
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.dispatcher import (
     async_dispatcher_connect,
@@ -38,7 +40,7 @@ CONF_MQTT_TOPIC = "mqtt_topic"
 CONF_REGION_MAPPING = "region_mapping"
 CONF_EVENTS_ONLY = "events_only"
 BEACON_DEV_ID = "beacon"
-PLATFORMS = [Platform.DEVICE_TRACKER]
+PLATFORMS = [Platform.DEVICE_TRACKER, Platform.SENSOR]
 
 DEFAULT_OWNTRACKS_TOPIC = "owntracks/#"
 
@@ -113,6 +115,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: OwnTracksConfigEntry) ->
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    context.async_deliver_pending_msg()
 
     entry.async_on_unload(async_dispatcher_connect(hass, DOMAIN, async_handle_message))
 
@@ -242,7 +245,8 @@ class OwnTracksContext:
         self.region_mapping = region_mapping
         self.events_only = events_only
         self.mqtt_topic = mqtt_topic
-        self._pending_msg = []
+        self._see_listeners: list[Callable[..., None]] = []
+        self._pending_msg: list[dict[str, Any]] | None = []
 
     @callback
     def async_valid_accuracy(self, message):
@@ -275,17 +279,26 @@ class OwnTracksContext:
         return True
 
     @callback
-    def set_async_see(self, func):
-        """Set a new async_see function."""
-        self.async_see = func
-        for msg in self._pending_msg:
-            func(**msg)
-        self._pending_msg.clear()
+    def async_add_see_listener(self, func: Callable[..., None]) -> CALLBACK_TYPE:
+        """Add a listener for see messages."""
+        self._see_listeners.append(func)
+        return partial(self._see_listeners.remove, func)
+
+    @callback
+    def async_deliver_pending_msg(self) -> None:
+        """Deliver messages received before the platforms were set up."""
+        pending_msg, self._pending_msg = self._pending_msg, None
+        for msg in pending_msg or ():
+            self.async_see(**msg)
 
     @callback
     def async_see(self, **data):
-        """Send a see message to the device tracker."""
-        self._pending_msg.append(data)
+        """Send a see message to the listeners."""
+        if self._pending_msg is not None:
+            self._pending_msg.append(data)
+            return
+        for listener in self._see_listeners:
+            listener(**data)
 
     @callback
     def async_see_beacons(self, hass, dev_id, kwargs_param):

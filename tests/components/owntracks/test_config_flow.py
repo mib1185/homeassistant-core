@@ -144,7 +144,7 @@ async def test_unload(hass: HomeAssistant) -> None:
     assert len(mock_forward.mock_calls) == 1
     entry = result["result"]
 
-    mock_forward.assert_called_once_with(entry, ["device_tracker"])
+    mock_forward.assert_called_once_with(entry, ["device_tracker", "sensor"])
     assert entry.data["webhook_id"] in hass.data["webhook"]
 
     with patch(
@@ -154,7 +154,7 @@ async def test_unload(hass: HomeAssistant) -> None:
         assert await hass.config_entries.async_unload(entry.entry_id)
 
     assert len(mock_unload.mock_calls) == 1
-    mock_forward.assert_called_once_with(entry, ["device_tracker"])
+    mock_forward.assert_called_once_with(entry, ["device_tracker", "sensor"])
     assert entry.data["webhook_id"] not in hass.data["webhook"]
 
 
