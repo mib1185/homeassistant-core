@@ -92,6 +92,9 @@ async def test_battery_sensor(
 
     assert hass.states.get(BATTERY_ENTITY_ID).state == "92"
     assert (
+        "battery_level" not in hass.states.get("device_tracker.paulus_pixel").attributes
+    )
+    assert (
         entity_registry.async_get(BATTERY_ENTITY_ID).unique_id == "paulus_pixel_battery"
     )
 

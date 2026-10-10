@@ -9,7 +9,7 @@ from homeassistant.components.device_tracker import (
     TrackerEntity,
     TrackerEntityStateAttribute,
 )
-from homeassistant.const import ATTR_BATTERY_LEVEL, EntityStateAttribute
+from homeassistant.const import EntityStateAttribute
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -95,12 +95,6 @@ class OwnTracksEntity(TrackerEntity, RestoreEntity):
 
     @property
     @override
-    def battery_level(self) -> int | None:
-        """Return the battery level of the device."""
-        return self._data.get("battery")
-
-    @property
-    @override
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return device specific attributes."""
         return self._data.get("attributes")
@@ -178,7 +172,6 @@ class OwnTracksEntity(TrackerEntity, RestoreEntity):
                 attr.get(EntityStateAttribute.LONGITUDE),
             ),
             "gps_accuracy": attr.get(TrackerEntityStateAttribute.GPS_ACCURACY),
-            "battery": attr.get(ATTR_BATTERY_LEVEL),
             "source_type": attr.get(DeviceTrackerEntityStateAttribute.SOURCE_TYPE),
             "attributes": attributes,
         }
