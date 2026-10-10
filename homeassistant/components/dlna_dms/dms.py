@@ -8,7 +8,6 @@ import functools
 from typing import Any
 
 from async_upnp_client.aiohttp import AiohttpSessionRequester
-from async_upnp_client.client import UpnpRequester
 from async_upnp_client.client_factory import UpnpFactory
 from async_upnp_client.const import NotificationSubType
 from async_upnp_client.exceptions import UpnpActionError, UpnpConnectionError, UpnpError
@@ -25,7 +24,7 @@ from homeassistant.components.media_source import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_DEVICE_ID, CONF_URL
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import aiohttp_client
 from homeassistant.helpers.service_info.ssdp import SsdpServiceInfo
 
@@ -36,7 +35,6 @@ from .const import (
     DLNA_RESOLVE_FILTER,
     DLNA_SORT_CRITERIA,
     DOMAIN,
-    DOMAIN_DATA,
     LOGGER,
     MEDIA_CLASS_MAP,
     PATH_OBJECT_ID_FLAG,
@@ -46,63 +44,7 @@ from .const import (
     STREAMABLE_PROTOCOLS,
 )
 
-
-class DlnaDmsData:
-    """Storage class for domain global data."""
-
-    hass: HomeAssistant
-    requester: UpnpRequester
-    upnp_factory: UpnpFactory
-    devices: dict[str, DmsDeviceSource]  # Indexed by config_entry.unique_id
-    sources: dict[str, DmsDeviceSource]  # Indexed by source_id
-
-    def __init__(
-        self,
-        hass: HomeAssistant,
-    ) -> None:
-        """Initialize global data."""
-        self.hass = hass
-        session = aiohttp_client.async_get_clientsession(hass, verify_ssl=False)
-        self.requester = AiohttpSessionRequester(session, with_sleep=True)
-        self.upnp_factory = UpnpFactory(self.requester, non_strict=True)
-        self.devices = {}
-        self.sources = {}
-
-    async def async_setup_entry(self, config_entry: ConfigEntry) -> bool:
-        """Create a DMS device connection from a config entry."""
-        assert config_entry.unique_id
-        device = DmsDeviceSource(self.hass, config_entry)
-        self.devices[config_entry.unique_id] = device
-        # source_id must be unique, which generate_source_id should guarantee.
-        # Ensure this is the case, for debugging purposes.
-        assert device.source_id not in self.sources
-        self.sources[device.source_id] = device
-        await device.async_added_to_hass()
-        return True
-
-    async def async_unload_entry(self, config_entry: ConfigEntry) -> bool:
-        """Unload a config entry and disconnect the corresponding DMS device."""
-        assert config_entry.unique_id
-        device = self.devices.pop(config_entry.unique_id)
-        del self.sources[device.source_id]
-        await device.async_will_remove_from_hass()
-        return True
-
-
-@callback
-def get_domain_data(hass: HomeAssistant) -> DlnaDmsData:
-    """Obtain this integration's domain data, creating it if needed.
-
-    Creation is deferred to the first caller rather than done at setup, to
-    avoid building DlnaDmsData and its dependencies until a device is
-    actually connected to. This module is imported to run the config flow
-    for any DMS device discovered on the network, including ignored ones.
-    """
-    if (data := hass.data.get(DOMAIN_DATA)) is not None:
-        return data
-
-    data = hass.data[DOMAIN_DATA] = DlnaDmsData(hass)
-    return data
+type DlnaDmsConfigEntry = ConfigEntry[DmsDeviceSource]
 
 
 @dataclass
@@ -182,12 +124,15 @@ class DmsDeviceSource:
     # Track BOOTID in SSDP advertisements for device changes
     _bootid: int | None = None
 
-    def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    def __init__(self, hass: HomeAssistant, config_entry: DlnaDmsConfigEntry) -> None:
         """Initialize a DMS Source."""
         self.hass = hass
         self.config_entry = config_entry
         self.location = self.config_entry.data[CONF_URL]
         self._device_lock = asyncio.Lock()
+        session = aiohttp_client.async_get_clientsession(hass, verify_ssl=False)
+        requester = AiohttpSessionRequester(session, with_sleep=True)
+        self._upnp_factory = UpnpFactory(requester, non_strict=True)
 
     # Callbacks and events
 
@@ -300,12 +245,8 @@ class DmsDeviceSource:
                 LOGGER.debug("Trying to connect when device already connected")
                 return
 
-            domain_data = get_domain_data(self.hass)
-
             # Connect to the base UPNP device
-            upnp_device = await domain_data.upnp_factory.async_create_device(
-                self.location
-            )
+            upnp_device = await self._upnp_factory.async_create_device(self.location)
 
             # Create profile wrapper
             self._device = DmsDevice(upnp_device, event_handler=None)

@@ -12,7 +12,6 @@ import pytest
 
 from homeassistant.components import media_source, ssdp
 from homeassistant.components.dlna_dms.const import DOMAIN
-from homeassistant.components.dlna_dms.dms import get_domain_data
 from homeassistant.components.media_player import BrowseError
 from homeassistant.components.media_source import Unresolvable
 from homeassistant.core import HomeAssistant
@@ -620,6 +619,7 @@ async def test_ssdp_bootid(
 async def test_repeated_connect(
     caplog: pytest.LogCaptureFixture,
     hass: HomeAssistant,
+    config_entry_mock: MockConfigEntry,
     upnp_factory_mock: Mock,
     connected_source_mock: None,
 ) -> None:
@@ -628,8 +628,7 @@ async def test_repeated_connect(
 
     # Calling internal function directly to skip trying to
     # time 2 SSDP messages carefully
-    domain_data = get_domain_data(hass)
-    device_source = domain_data.sources[MOCK_SOURCE_ID]
+    device_source = config_entry_mock.runtime_data
     with caplog.at_level(logging.DEBUG):
         await device_source.device_connect()
 

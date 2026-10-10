@@ -1,7 +1,7 @@
 """Fixtures for DLNA DMS tests."""
 
 from collections.abc import AsyncGenerator, Generator
-from typing import Final, cast
+from typing import Final
 from unittest.mock import AsyncMock, MagicMock, Mock, create_autospec, patch, seal
 
 from async_upnp_client.client import UpnpDevice, UpnpService
@@ -13,7 +13,6 @@ from homeassistant.components.dlna_dms.const import (
     CONFIG_VERSION,
     DOMAIN,
 )
-from homeassistant.components.dlna_dms.dms import DlnaDmsData
 from homeassistant.const import CONF_DEVICE_ID, CONF_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
@@ -174,7 +173,3 @@ async def device_source_mock(
         ssdp_scanner_mock.async_register_callback.await_count
         == ssdp_scanner_mock.async_register_callback.return_value.call_count
     )
-
-    domain_data = cast(DlnaDmsData, hass.data[DOMAIN])
-    assert MOCK_DEVICE_USN not in domain_data.devices
-    assert MOCK_SOURCE_ID not in domain_data.sources

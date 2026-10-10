@@ -2,22 +2,14 @@
 
 from collections.abc import Mapping
 import logging
-from typing import TYPE_CHECKING, Final
+from typing import Final
 
 from homeassistant.components.media_player import MediaClass
-from homeassistant.util.hass_dict import HassKey
-
-if TYPE_CHECKING:
-    from .dms import DlnaDmsData
 
 LOGGER = logging.getLogger(__package__)
 
 DOMAIN: Final = "dlna_dms"
 DEFAULT_NAME: Final = "DLNA Media Server"
-
-# One DlnaDmsData holds the device and source registries for every config
-# entry, so it is shared rather than owned by any one entry.
-DOMAIN_DATA: HassKey[DlnaDmsData] = HassKey(DOMAIN)
 
 CONF_SOURCE_ID: Final = "source_id"
 CONFIG_VERSION: Final = 1

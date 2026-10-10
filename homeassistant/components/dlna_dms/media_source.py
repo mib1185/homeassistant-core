@@ -22,7 +22,7 @@ from homeassistant.components.media_source import (
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, LOGGER, PATH_OBJECT_ID_FLAG, ROOT_OBJECT_ID, SOURCE_SEP
-from .dms import DidlPlayMedia, get_domain_data
+from .dms import DidlPlayMedia, DmsDeviceSource
 
 
 async def async_get_media_source(hass: HomeAssistant) -> DmsMediaSource:
@@ -45,8 +45,8 @@ class DmsMediaSource(MediaSource):
     @override
     async def async_resolve_media(self, item: MediaSourceItem) -> DidlPlayMedia:
         """Resolve a media item to a playable item."""
-        dms_data = get_domain_data(self.hass)
-        if not dms_data.sources:
+        sources = self._get_sources()
+        if not sources:
             raise Unresolvable("No sources have been configured")
 
         source_id, media_id = _parse_identifier(item)
@@ -56,7 +56,7 @@ class DmsMediaSource(MediaSource):
             raise Unresolvable(f"No media ID in {item.identifier}")
 
         try:
-            source = dms_data.sources[source_id]
+            source = sources[source_id]
         except KeyError as err:
             raise Unresolvable(f"Unknown source ID: {source_id}") from err
 
@@ -65,14 +65,14 @@ class DmsMediaSource(MediaSource):
     @override
     async def async_browse_media(self, item: MediaSourceItem) -> BrowseMediaSource:
         """Browse media."""
-        dms_data = get_domain_data(self.hass)
-        if not dms_data.sources:
+        sources = self._get_sources()
+        if not sources:
             raise BrowseError("No sources have been configured")
 
         source_id, media_id = _parse_identifier(item)
         LOGGER.debug("Browsing for %s / %s", source_id, media_id)
 
-        if not source_id and len(dms_data.sources) > 1:
+        if not source_id and len(sources) > 1:
             # Browsing the root of dlna_dms with more than one server, return
             # all known servers.
             base = BrowseMediaSource(
@@ -97,21 +97,28 @@ class DmsMediaSource(MediaSource):
                     can_expand=True,
                     thumbnail=source.icon,
                 )
-                for source_id, source in dms_data.sources.items()
+                for source_id, source in sources.items()
             ]
 
             return base
 
         if not source_id:
             # No source specified, default to the first registered
-            source_id = next(iter(dms_data.sources))
+            source_id = next(iter(sources))
 
         try:
-            source = dms_data.sources[source_id]
+            source = sources[source_id]
         except KeyError as err:
             raise BrowseError(f"Unknown source ID: {source_id}") from err
 
         return await source.async_browse_media(media_id)
+
+    def _get_sources(self) -> dict[str, DmsDeviceSource]:
+        """Return the loaded DMS device sources, indexed by source_id."""
+        return {
+            entry.runtime_data.source_id: entry.runtime_data
+            for entry in self.hass.config_entries.async_loaded_entries(DOMAIN)
+        }
 
 
 def _parse_identifier(item: MediaSourceItem) -> tuple[str | None, str | None]:

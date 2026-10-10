@@ -19,10 +19,5 @@
         "title": "Discovered DLNA DMA devices"
       }
     }
-  },
-  "exceptions": {
-    "setup_failed": {
-      "message": "Failed to set up DLNA media server {name}"
-    }
   }
 }

@@ -1,14 +1,12 @@
 """Test the DLNA DMS component setup, cleanup, and module-level functions."""
 
-from typing import cast
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from homeassistant.components.dlna_dms.const import (
     CONF_SOURCE_ID,
     CONFIG_VERSION,
     DOMAIN,
 )
-from homeassistant.components.dlna_dms.dms import DlnaDmsData
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_DEVICE_ID, CONF_URL
 from homeassistant.core import HomeAssistant
@@ -39,11 +37,8 @@ async def test_resource_lifecycle(
     await hass.async_block_till_done()
 
     # Check the device source is created and working
-    domain_data = cast(DlnaDmsData, hass.data[DOMAIN])
-    assert len(domain_data.devices) == 1
-    assert len(domain_data.sources) == 1
-    entity = next(iter(domain_data.devices.values()))
-    assert entity.available is True
+    assert config_entry_mock.state is ConfigEntryState.LOADED
+    assert config_entry_mock.runtime_data.available is True
 
     # Check listener subscriptions
     assert len(config_entry_mock.update_listeners) == 0
@@ -56,6 +51,7 @@ async def test_resource_lifecycle(
     assert dms_device_mock.on_event is None
 
     # Unload the config entry
+    device_source = config_entry_mock.runtime_data
     assert await hass.config_entries.async_remove(config_entry_mock.entry_id) == {
         "require_restart": False
     }
@@ -70,9 +66,9 @@ async def test_resource_lifecycle(
     assert dms_device_mock.async_unsubscribe_services.await_count == 0
     assert dms_device_mock.on_event is None
 
-    # Check device source is gone
-    assert not domain_data.devices
-    assert not domain_data.sources
+    # Check device source is disconnected
+    assert config_entry_mock.state is ConfigEntryState.NOT_LOADED
+    assert device_source.available is False
 
 
 async def test_migrate_entry(hass: HomeAssistant) -> None:
@@ -130,19 +126,3 @@ async def test_migrate_entry_collision(
     assert updated_entry
     assert updated_entry.version == CONFIG_VERSION
     assert updated_entry.data.get(CONF_SOURCE_ID) == f"{MOCK_SOURCE_ID}_1"
-
-
-async def test_setup_entry_failed(
-    hass: HomeAssistant, config_entry_mock: MockConfigEntry
-) -> None:
-    """Test setup fails when the data manager can't set up the entry."""
-    config_entry_mock.add_to_hass(hass)
-
-    with patch.object(DlnaDmsData, "async_setup_entry", return_value=False):
-        await hass.config_entries.async_setup(config_entry_mock.entry_id)
-        await hass.async_block_till_done()
-
-    assert config_entry_mock.state is ConfigEntryState.SETUP_ERROR
-    assert config_entry_mock.reason == (
-        f"Failed to set up DLNA media server {MOCK_DEVICE_NAME}"
-    )
